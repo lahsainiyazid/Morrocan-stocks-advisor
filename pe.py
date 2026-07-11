@@ -35,14 +35,21 @@ for row in rows:
                 div_yield=float(div_raw) if div_raw else 0.0
             except ValueError:
                 div_yield=0.0
+        price_span=row.select_one('td[data-column-key="current_price"] span')
+        if price_span:
+            price=float(price_span.text.strip().replace(",",""))
         target_pe=watchlist[name.lower()]["Target_PE"]
-        scraped_data.append({"Company-name":name,"P/E":pe_ratio,
+        scraped_data.append({"Company-name":name,
+                             "Price":price, 
+                             "P/E":pe_ratio,
                              "Target_PE":target_pe,"Yield":div_yield})
 df=pd.DataFrame(scraped_data)
 df["PE_Score"]=df["Target_PE"]/df["P/E"]
 df["PE_Score"]=df["PE_Score"].round(2)
 df["Score"]=df["PE_Score"]*(1+(df["Yield"]/100))
 df["Score"]=df["Score"].round(2)
-df=df.sort_values(by="Score",ascending=False)
+df=df.sort_values(by=["Score","PE_Score"],ascending=False)
+df.index=range(1,len(df)+1)
+df.index.name="Rank"
 print(df)
 
