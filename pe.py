@@ -1,9 +1,11 @@
+import os 
+from google import genai 
 import pandas as pd 
 import cloudscraper 
 from bs4 import BeautifulSoup 
-
+key=os.environ.get("key")
+client=genai.Client(api_key=key)
 url = "https://casabourse.ma/screener/"
-
 watchlist = {
   "Addoha": 24.5,
   "AFMA": 16.5,
@@ -172,3 +174,62 @@ if not df.empty:
 else:
     print("Warning: No matching companies from your watchlist were found on the page.")
 
+prompt=f"""
+You are an equity analyst specialized in the Casablanca Stock Exchange (Bourse de Casablanca).
+
+Analyze this company:
+{df["Company-name"].iloc[0]}
+
+Available market data i scraped:
+{[df["Price"].iloc[0],df["P/E"].iloc[0],df["Yield"].iloc[0]]}
+ And this second company:
+{df["Company-name"].iloc[1]}
+ Available  data i scraped:
+ {[df["Price"].iloc[1],df["P/E"].iloc[1],df["Yield"].iloc[1]]}
+Perform a fundamental analysis using ONLY verified information.
+If data is unavailable, say "Not available".
+Do not estimate or invent numbers.
+
+Cover:
+
+1. Business Analysis
+- Business model
+- Main activities
+- Sector outlook
+- Competitive advantages
+- Main risks
+2. Financial Analysis (last 5 years if available)
+- Revenue growth
+- Net income trend
+- EPS trend
+- Profit margins
+- ROE
+- Debt level
+- Free cash flow
+3. Valuation
+- Current price
+- Market capitalization
+- P/E ratio
+- Dividend yield
+- Compare valuation with Moroccan sector peers
+4. Investment Conclusion
+- Strengths
+- Weaknesses
+- Investment thesis
+- Overall score out of 100:
+  - Business quality: /20
+  - Growth: /20
+  - Profitability: /20
+  - Financial health: /20
+  - Valuation: /20
+Final classification:
+Strong Buy / Buy / Hold / Avoid
+Rules:
+- Focus only on Casablanca Stock Exchange companies.
+- Prefer official financial statements and company reports.
+- Mention uncertainty when information is missing.
+- Never fabricate financial metrics.
+Format the answer as a very short  analyst report with  bullet points.
+"""
+result=client.models.generate_content(model="gemini-2.5-flash",contents=prompt)
+print(result.text)
